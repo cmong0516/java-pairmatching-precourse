@@ -2,6 +2,9 @@ package pairmatching;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import pairmatching.constans.Course;
 import pairmatching.constans.Function;
@@ -13,19 +16,18 @@ public class MyTest {
     @Test
     public void test() {
         MatchingController controller = new MatchingController();
-        List<Crew> crews = controller.makeCrewList(Course.BACKEND);
-        List<Pair> pairs = controller.makePair(crews);
+        Crew c1 = new Crew("아아", Course.BACKEND);
+        Crew c2 = new Crew("라떼", Course.BACKEND);
+        Crew c3 = new Crew("뜨아", Course.BACKEND);
+        Pair pair = new Pair(c1, c2, Level.LEVEL1);
 
-        Map<MatchingInfo, List<Pair>> matching = controller.matching("프론트엔드,레벨1,로또");
+        List<Crew> pairCrew = pair.getPairCrew();
 
-        MatchingInfo matchingInfo = controller.makeMatchingInfo("프론트엔드,레벨1,로또");
+        Map<Level, Crew> matchedCrew = pairCrew.get(0).getMatchedCrew();
 
-        List<Pair> pairs1 = matching.get(matchingInfo);
+        Crew crew = matchedCrew.get(Level.LEVEL1);
 
-        for (Pair pair : pairs1) {
-            System.out.println(pair.getPairCrew());
-        }
-
+        System.out.println("crew.getName() = " + crew.getName());
     }
 
 }

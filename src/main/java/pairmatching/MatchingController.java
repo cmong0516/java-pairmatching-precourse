@@ -1,12 +1,12 @@
 package pairmatching;
 
-import camp.nextstep.edu.missionutils.Randoms;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import pairmatching.constans.Course;
 import pairmatching.constans.Function;
+import pairmatching.constans.Level;
 import pairmatching.constans.Mission;
 import pairmatching.constans.OverRapMatching;
 
@@ -15,7 +15,8 @@ public class MatchingController {
     private final Output output;
     private final List<String> backend;
     private final List<String> frontend;
-    private final Map<MatchingInfo,List<Pair>> matchingMap;
+    private final Map<MatchingInfo, List<Pair>> matchingMap;
+    private int tryCount;
 
 
     public MatchingController() {
@@ -25,6 +26,7 @@ public class MatchingController {
         this.backend = fileScanner.getBackEndCrews();
         this.frontend = fileScanner.getFrontEndCrews();
         this.matchingMap = new HashMap<>();
+        this.tryCount = 0;
     }
 
     public void run() {
@@ -42,14 +44,19 @@ public class MatchingController {
                     continue;
                 }
 
-
                 matching(courseLevelMissionInput);
             }
 
             if (functionInput.equals(Function.FAIR_INQUIRY.getFunction())) {
                 String inquiryCourseLevelMissionInput = courseLevelMissionInput();
                 List<Pair> pairs = getMatchingMap().get(makeMatchingInfo(inquiryCourseLevelMissionInput));
-                output.printPairResult(pairs);
+                try {
+                    output.printPairResult(pairs);
+
+                } catch (NullPointerException e) {
+                    System.out.println("[ERROR] 조회하신 매칭 정보가 존재하지 않습니다.");
+                }
+
             }
 
             if (functionInput.equals(Function.PAIR_CLEAR.getFunction())) {
@@ -65,39 +72,46 @@ public class MatchingController {
 
     }
 
-    public Map<MatchingInfo,List<Pair>> matching(String courseLevelMissionInput) {
+    public void matching(String courseLevelMissionInput) {
         String[] split = courseLevelMissionInput.split(",");
         MatchingInfo matchingInfo = makeMatchingInfo(courseLevelMissionInput);
         List<Crew> crews = makeCrewList(Course.findCourse(split[0].trim()));
-        crews = Randoms.shuffle(crews);
-        List<Pair> pairs = makePair(crews);
+        List<Pair> pairs = makePair(crews, Level.findByName(split[1].trim()));
         output.printPairResult(pairs);
 
         getMatchingMap().put(matchingInfo, pairs);
 
-        return this.matchingMap;
     }
 
 
     public MatchingInfo makeMatchingInfo(String courseLevelMissionInput) {
         String[] split = courseLevelMissionInput.split(",");
         return new MatchingInfo(Course.findCourse(split[0].trim()),
-                Mission.findByName(split[2].trim()));
+                Mission.findByName(split[2].trim()), Level.findByName(split[1].trim()));
     }
 
-    public List<Pair> makePair(List<Crew> crews) {
+    public List<Pair> makePair(List<Crew> crews, Level level) {
         List<Pair> result = new ArrayList<>();
         int crewsSize = crews.size();
         if (crews.size() % 2 == 1) {
-            crewsSize -=3;
+            crewsSize -= 3;
         }
 
-        for (int i = 0; i < crewsSize; i+=2) {
-            result.add(new Pair(crews.get(i), crews.get(i + 1)));
-        }
+        while (true) {
+            try {
+                for (int i = 0; i < crewsSize; i += 2) {
+                    result.add(new Pair(crews.get(i), crews.get(i + 1), level));
+                }
 
-        if (crews.size() % 2 == 1) {
-            result.add(new Pair(crews.get(crewsSize - 1), crews.get(crewsSize - 2), crews.get(crewsSize - 3)));
+                if (crews.size() % 2 == 1) {
+                    result.add(
+                            new Pair(crews.get(crewsSize - 1), crews.get(crewsSize - 2), crews.get(crewsSize - 3), level));
+                }
+                break;
+            } catch (IllegalStateException e) {
+                System.out.println("[ERROR] ");
+                tryCount++;
+            }
         }
 
 
@@ -188,13 +202,27 @@ public class MatchingController {
     public boolean isAlreadyCheck(String courseLevelMission) {
         String[] split = courseLevelMission.split(",");
         MatchingInfo matchingInfo = new MatchingInfo(Course.findCourse(split[0].trim()),
-                Mission.findByName(split[2].trim()));
+                Mission.findByName(split[2].trim()), Level.findByName(split[1].trim()));
         return matchingMap.containsKey(matchingInfo);
     }
 
-    public boolean isAlreadyPair() {
+    public List<MatchingInfo> findMatchingInfoByLevel(String level) {
+        List<MatchingInfo> matchingInfos = new ArrayList<>();
+        for (MatchingInfo matchingMapKey : matchingMap.keySet()) {
+            if (matchingMapKey.getLevel().equals(Level.findByName(level))) {
+                matchingInfos.add(matchingMapKey);
+            }
+        }
+        return matchingInfos;
+    }
 
-        return false;
+    public List<List<Pair>> findMatchings(List<MatchingInfo> findMatchingInfoByLevel) {
+        List<List<Pair>> matchings = new ArrayList<>();
+        for (MatchingInfo matchingInfo : findMatchingInfoByLevel) {
+            matchings.add(matchingMap.get(matchingInfo));
+        }
+
+        return matchings;
     }
 
     public Map<MatchingInfo, List<Pair>> getMatchingMap() {
