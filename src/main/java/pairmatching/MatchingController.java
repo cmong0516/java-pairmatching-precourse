@@ -1,5 +1,6 @@
 package pairmatching;
 
+import camp.nextstep.edu.missionutils.Randoms;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +39,7 @@ public class MatchingController {
                 String courseLevelMissionInput = courseLevelMissionInput();
 
                 boolean alreadyCheck = isAlreadyCheck(courseLevelMissionInput);
-                boolean reMatching = isReMatching(alreadyCheck, courseLevelMissionInput);
+                boolean reMatching = isReMatching(alreadyCheck);
 
                 if (alreadyCheck && !reMatching) {
                     continue;
@@ -111,6 +112,11 @@ public class MatchingController {
             } catch (IllegalStateException e) {
                 System.out.println("[ERROR] ");
                 tryCount++;
+                crews = Randoms.shuffle(crews);
+                if (tryCount == 3) {
+                    throw new RuntimeException("매칭에 3회 실패하였습니다.");
+                }
+
             }
         }
 
@@ -118,7 +124,7 @@ public class MatchingController {
         return result;
     }
 
-    public boolean isReMatching(boolean alreadyCheck, String courseLevelMissionInput) {
+    public boolean isReMatching(boolean alreadyCheck) {
         if (alreadyCheck) {
             String overRapMatchingInput = overRapMatchingInput();
             return overRapMatchingInput.equals(OverRapMatching.YES.getValue());
